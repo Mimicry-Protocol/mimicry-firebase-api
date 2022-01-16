@@ -7,7 +7,7 @@ This API helps lower fees by enabling non-verified price discovery. Whereas actu
 This API is and early-stage alpha build that leverages Google Firebase. Future versions will be more robust.
 
 ## Usage
-Available GET endpoints include:
+Available POST endpoints include:
 
 #### `https://us-central1-mimicry-api.cloudfunctions.net/publicCollectionPrice`
 
