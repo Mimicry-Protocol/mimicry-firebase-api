@@ -18,7 +18,7 @@ Request Body:
 }
 ```
 
-#### `/public/contact/price`
+#### `/public/contract/price`
 
 Request Body:
 ```
