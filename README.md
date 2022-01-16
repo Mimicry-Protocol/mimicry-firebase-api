@@ -9,7 +9,7 @@ This API is and early-stage alpha build that leverages Google Firebase. Future v
 ## Usage
 Available GET endpoints include:
 
-#### `/public/collection/price`
+#### `https://us-central1-mimicry-api.cloudfunctions.net/publicCollectionPrice`
 
 Request Body:
 ```
@@ -18,15 +18,6 @@ Request Body:
 }
 ```
 
-#### `/public/contract/price`
-
-Request Body:
-```
-{
-    'network':'ethereum',
-    'address':'thecontractaddress'
-}
-```
 
 
 
