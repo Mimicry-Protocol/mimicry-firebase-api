@@ -1,6 +1,6 @@
 const functions = require('firebase-functions');
+const cors = require('cors')({ origin: true });
 const fetch = require('node-fetch');
-const ccxt = require('ccxt');
 const _ = require('lodash');
 
 /**
@@ -22,47 +22,66 @@ function error(response, statusCode, message) {
 /**
  * Get the price of a valid collection on OpenSea
  */
-exports = module.exports = functions
-    .https
-    .onRequest(async (request, response) => {
-        try {
-            // Initialize config
-            // const config = functions.config();
+exports = module.exports = functions.https
+    .onRequest((request, response) => {
+        cors(request, response, async () => {
+            try {
+                // Initialize config
+                // @TODO use this later once we have an OpenSea API key
+                // const config = functions.config();
 
-            // Get the data from the request
-            const { 
-                slug
-            } = request.body;
+                // Get the data from the request
+                const { 
+                    slug
+                } = request.body;
 
-            // Return an error if needed
-            if (slug == undefined || slug == '')
-                throw new Error("A `slug` must be set.");
+                // Return an error if needed
+                if (slug == undefined || slug == '')
+                    throw new Error("An OpenSea colleciton `slug` must be set.");
 
-            // Get the collection data from OpenSea
-            // @TODO Use an API key once granted
-            const collectionInfo = await fetch('https://api.opensea.io/collection/' + slug + '?format=json', {
-                method: 'get',
-                headers: { 'Content-Type': 'application/json' },
-            });
+                // Get the collection data from OpenSea
+                // @TODO Use an API key once granted
+                const collectionResponse = await fetch('https://api.opensea.io/collection/' + slug + '?format=json', {
+                    method: 'GET',
+                    headers: { 'Content-Type': 'application/json' },
+                });
+                const collectionInfo = await collectionResponse.json();
+                console.log(collectionInfo);
 
-            console.log(collectionInfo);
+                // Make sure the collection exists
+                if (collectionInfo.success === false)
+                    throw new Error("The collection '" + slug + "' was not found on OpenSea.");
+                
+                // Make sure the collection is safe-list-verified
+                const safeListStatus = collectionInfo.collection.safelist_request_status;
+                if (safeListStatus !== 'approved'
+                    && safeListStatus !== 'verified')
+                    throw new Error("Not verified. '" + slug + "' is not safe enough to trade.");
 
+                // Ensure there is a resonable number of holders to prevent against fraud
+                const holdersPercentage = collectionInfo.collection.stats.num_owners
+                    / collectionInfo.collection.stats.total_supply;
+                if (holdersPercentage < .2)
+                    throw new Error("Too few holders. '" + slug + "' is not safe enough to trade.");
+                    
+                // Ensure there is a resonable amount of trading to prevent against fraud
+                const numSalesPastSevenDays = collectionInfo.collection.stats.seven_day_sales;
+                if (numSalesPastSevenDays < 50)
+                    throw new Error("Too few sales. '" + slug + "' is not safe enough to trade.");
 
-            // Connect to Coinbase via CCXT
-            // We need this to get the price of ETH/USD
-            // @TODO move this price lookup to Chainlink
-            // const exchange = new ccxt['coinbasepro']({
-            //     apiKey: config.coinbasepro.key,
-            //     secret: config.coinbasepro.secret,
-            //     password: config.coinbasepro.password
-            // });
-            response.status(200).send(collectionInfo);
+                // Get the average sale price
+                const averagePriceInUsd = collectionInfo.collection.stats.seven_day_average_price
+                    * collectionInfo.collection.payment_tokens[0].usd_price;
 
-            // Terminate the function
-            response.end();
+                // Return a response to the client
+                response.status(200).send('{"price": ' + averagePriceInUsd + '}');
 
-        } catch (err) {
-            functions.logger.error(err, { structuredData: true });
-            error(response, 400, err.message);
-        }
+                // Terminate the function
+                response.end();
+
+            } catch (err) {
+                functions.logger.error(err, { structuredData: true });
+                error(response, 400, err.message);
+            }
+        })
     });
