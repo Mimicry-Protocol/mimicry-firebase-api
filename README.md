@@ -14,7 +14,7 @@ Available POST endpoints include:
 Request Body:
 ```
 {
-    'slug':'theopenseaslug'
+    'slug':'boredapeyachtclub'
 }
 ```
 
