@@ -22,7 +22,7 @@ exports = module.exports = functions.https
                 } = request.body;
 
                 // Return an error if needed
-                if (slug == undefined || slug == '')
+                if (slug === undefined || slug === '')
                     throw new Error("An OpenSea colleciton `slug` must be set.");
 
                 // Get the collection data from OpenSea
@@ -56,7 +56,7 @@ exports = module.exports = functions.https
                     throw new Error("Too few sales. '" + slug + "' is not safe enough to trade.");
 
                 // Return a response to the client
-                response.status(200).send('{"valid": true}');
+                response.status(200).send('{"success": true}');
 
                 // Terminate the function
                 response.end();
