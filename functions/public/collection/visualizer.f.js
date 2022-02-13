@@ -1,33 +1,9 @@
 const functions = require('firebase-functions');
 const cors = require('cors')({ origin: true });
 const fetch = require('node-fetch');
-const util = require('util');
+const potrace = require('potrace');
 const _ = require('lodash');
-
-/**
- * Return Clean Error Response
- * 
- * @param {Object} response Express response object
- * @param {Number} statusCode The status code to return
- * @param {String} message The error message
- */
-function error(response, statusCode, message) {
-    response.status(statusCode).send({
-        "timestamp": Date.now(),
-        "status": statusCode,
-        "error": message
-    });
-    response.end();
-}
-
-// Clean logging
-function log(message) {
-    if (!process.env.FIREBASE_CONFIG || process.env.FUNCTIONS_EMULATOR) {
-        console.log(util.inspect(message, {showHidden: false, depth: null, colors: true}));
-    } else {
-        functions.logger.log(message, { structuredData: true });
-    }
-};
+const _utils = require('./../../utils');
 
 /**
  * Get the IPFS url for the SVG representation of a collection slug
@@ -62,59 +38,43 @@ exports = module.exports = functions.https
                     throw new Error("The collection '" + slug + "' was not found on OpenSea.");
                 
                 // Get the contract address
-                log(collectionInfo.primary_asset_contracts);
-
-                const collectionContract = collectionInfo.primary_asset_contracts.address;
+                const collectionContractAddress = collectionInfo.collection.primary_asset_contracts[0].address;
 
                 // Get the total number of images
-                const collectionCount = collectionInfo.stats.count - 1;
+                const collectionCount = collectionInfo.collection.stats.count - 1;
+
+                // Select a random collection asset
                 const collectionAssetId = _.random(1, collectionCount);
 
-                // Get a specific NFT asset from a collection
-                const collectionAssetResponse = await fetch('https://api.opensea.io/v1/asset/'
-                     + collectionContract
+                // Get a specific collection asset's metadata
+                const collectionAssetResponse = await fetch('https://api.opensea.io/asset/'
+                     + collectionContractAddress
                      + '/' + collectionAssetId, {
                     method: 'GET',
                     headers: { 'Content-Type': 'application/json' },
                 });
                 const collectionAssetInfo = await collectionAssetResponse.json();
                 
-                log(collectionAssetInfo);
+                // Set bitmap to svg conversion params
+                const params = {
+                    background: '#49ffd2',
+                    // color: 'blue'
+                };
 
-                response.end();
-                return;
+                // Convert the collection asset art into an SVG
+                potrace.trace(collectionAssetInfo.image_url, params, function(err, svg) {
+                    if (err) throw err;
 
+                    // Return a response to the client
+                    response.status(200).send(svg);
 
-                // Make sure the collection is safe-list-verified
-                const safeListStatus = collectionInfo.collection.safelist_request_status;
-                if (safeListStatus !== 'approved'
-                    && safeListStatus !== 'verified')
-                    throw new Error("Not verified. '" + slug + "' is not safe enough to trade.");
-
-                // Ensure there is a resonable number of holders to prevent against fraud
-                const holdersPercentage = collectionInfo.collection.stats.num_owners
-                    / collectionInfo.collection.stats.total_supply;
-                if (holdersPercentage < .2)
-                    throw new Error("Too few holders. '" + slug + "' is not safe enough to trade.");
-                    
-                // Ensure there is a resonable amount of trading to prevent against fraud
-                const numSalesPastSevenDays = collectionInfo.collection.stats.seven_day_sales;
-                if (numSalesPastSevenDays < 50)
-                    throw new Error("Too few sales. '" + slug + "' is not safe enough to trade.");
-
-                // Get the average sale price
-                const averagePriceInUsd = collectionInfo.collection.stats.seven_day_average_price
-                    * collectionInfo.collection.payment_tokens[0].usd_price;
-
-                // Return a response to the client
-                response.status(200).send('{"price": ' + averagePriceInUsd + '}');
-
-                // Terminate the function
-                response.end();
+                    // Terminate the function
+                    response.end();
+                });
 
             } catch (err) {
                 functions.logger.error(err, { structuredData: true });
-                error(response, 400, err.message);
+                _utils.error(response, 400, err.message);
             }
         })
     });
