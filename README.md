@@ -9,7 +9,9 @@ This API is and early-stage alpha build that leverages Google Firebase. Future v
 ## Usage
 Available POST endpoints include:
 
-#### `https://us-central1-mimicry-api.cloudfunctions.net/publicCollectionPrice`
+#### `https://us-central1-mimicry-api.cloudfunctions.net/publicCollectionIsTradable`
+#### `https://us-central1-mimicry-api.cloudfunctions.net/publicCollectionAppraisal`
+#### `https://us-central1-mimicry-api.cloudfunctions.net/publicCollectionVisualizer`
 
 Request Body:
 ```
