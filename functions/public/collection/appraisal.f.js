@@ -22,52 +22,38 @@ exports = module.exports = functions.https
                 } = request.body;
 
                 // Return an error if needed
-                if (slug == undefined || slug == '')
+                if (slug === undefined || slug === '')
                     throw new Error("An OpenSea colleciton `slug` must be set.");
 
                 // Determine if this collection is eligible for inclusion
-                const runner = async () => await fetch(_utils.getBasepath() + 'publicCollectionInclusion', {
+                const isTradableRunner = async () => await fetch(_utils.getBasepath()
+                     + 'publicCollectionIsTradable', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: { 'slug': slug }
+                    body: JSON.stringify({ 'slug': slug })
                 });
-                const runnerResponse = await _utils.fetchSafely(runner);
-                const collectionInfo = await runnerResponse.json();
-                
+                const isTradableRunnerResponse = await _utils.fetchSafely(isTradableRunner);
+                const isTradable = await isTradableRunnerResponse.json();
 
+                // End if there is an error
+                if (isTradable.success === undefined) throw new Error(isTradable.error);
 
                 // Get the collection data from OpenSea
                 // @TODO Use an API key once granted
-                const runner = async () => await fetch('https://api.opensea.io/collection/' + slug + '?format=json', {
+                const appraisalRunner = async () => await fetch('https://api.opensea.io/collection/' + slug + '?format=json', {
                     method: 'GET',
                     headers: { 'Content-Type': 'application/json' },
                 });
-                const runnerResponse = await _utils.fetchSafely(runner);
-                const collectionInfo = await runnerResponse.json();
-                
-                // Make sure the collection exists
-                if (collectionInfo.success === false)
-                    throw new Error("The collection '" + slug + "' was not found on OpenSea.");
-                
-                // Make sure the collection is safe-list-verified
-                const safeListStatus = collectionInfo.collection.safelist_request_status;
-                if (safeListStatus !== 'approved'
-                    && safeListStatus !== 'verified')
-                    throw new Error("Not verified. '" + slug + "' is not safe enough to trade.");
+                const appraisalRunnerResponse = await _utils.fetchSafely(appraisalRunner);
+                const collectionInfo = await appraisalRunnerResponse.json();
 
-                // Ensure there is a resonable number of holders to prevent against fraud
-                const holdersPercentage = collectionInfo.collection.stats.num_owners
-                    / collectionInfo.collection.stats.total_supply;
-                if (holdersPercentage < .2)
-                    throw new Error("Too few holders. '" + slug + "' is not safe enough to trade.");
-                    
-                // Ensure there is a resonable amount of trading to prevent against fraud
-                const numSalesPastSevenDays = collectionInfo.collection.stats.seven_day_sales;
-                if (numSalesPastSevenDays < 50)
-                    throw new Error("Too few sales. '" + slug + "' is not safe enough to trade.");
+                // Get the average sale price
+                // @TODO Make this more sophisticated
+                const averagePriceInUsd = collectionInfo.collection.stats.seven_day_average_price
+                    * collectionInfo.collection.payment_tokens[0].usd_price;
 
                 // Return a response to the client
-                response.status(200).send('{"valid": true}');
+                response.status(200).send('{"price": ' + averagePriceInUsd + '}');
 
                 // Terminate the function
                 response.end();
