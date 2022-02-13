@@ -21,7 +21,8 @@
     "glob": "^7.2.0",
     "lodash": "^4.17.21",
     "node-fetch": "^2.6.6",
-    "p-retry": "^4.6.1"
+    "p-retry": "^4.6.1",
+    "potrace": "^2.1.8"
   },
   "devDependencies": {
     "firebase-functions-test": "^0.2.0"
