@@ -56,6 +56,7 @@ exports = module.exports = functions.https
                 const collectionAssetInfo = await collectionAssetResponse.json();
                 
                 // Set bitmap to svg conversion params
+                // @TODO change the color based on a person's public key
                 const params = {
                     background: '#49ffd2',
                     // color: 'blue'
