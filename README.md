@@ -20,6 +20,17 @@ Request Body:
 }
 ```
 
+### Local Development Testing
+- Emulate Firebase Functions by running `firebase emulators:start` from the `functions` directory of this project.
+- Can also use options such as `firebase emulators:start --only "functions"`
+- Sometimes emulators don't close their ports properly. Try this on Mac (of course updating it to match the port that was mistakenly left open) `lsof -t -i tcp:8080 | xargs kill`
 
+### Notes on Function Files
+- Each function is nested into `./functions/{callType}/{descriptiveName}/*.f.js` and ultimately made available via `./functions/index.js`
+- If your new function is not recognized by the system, double check to ensure you have added the .f.js suffix properly.
+
+### Deployment instructions
+- Run `firebase deploy` from the root directory of this project.
+- or `firebase deploy --only functions`
 
 
