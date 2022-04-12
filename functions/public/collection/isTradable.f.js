@@ -51,9 +51,9 @@ exports = module.exports = functions.https
                     throw new Error("Too few holders. '" + slug + "' is not safe enough to trade.");
                     
                 // Ensure there is a resonable amount of trading to prevent against fraud
-                const numSalesPastSevenDays = collectionInfo.collection.stats.seven_day_sales;
-                if (numSalesPastSevenDays < 50)
-                    throw new Error("Too few sales. '" + slug + "' is not safe enough to trade.");
+                // const numSalesPastSevenDays = collectionInfo.collection.stats.seven_day_sales;
+                // if (numSalesPastSevenDays < 50)
+                //     throw new Error("Too few sales. '" + slug + "' is not safe enough to trade.");
 
                 // Return a response to the client
                 response.status(200).send('{"success": true}');
